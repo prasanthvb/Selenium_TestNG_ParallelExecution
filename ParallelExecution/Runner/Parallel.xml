@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Regression Suite" parallel="classes" thread-count="4">
+    <listeners>
+        <listener class-name="com.parallel.listeners.extentTestListener" />
+    </listeners>
+    <parameter name="sendemail" value="" />
+    <test name="Demo Test">
+        <parameter name="browser" value="Chrome" />
+        <parameter name="url" value="TEST" />
+        <parameter name="userName" value="@.com" />
+        <parameter name="password" value="=" />
+        <parameter name="author" value="Prasanth V B" />
+        <parameter name="module" value="Element Test" />
+        <parameter name="appName" value="ToolsQA" />
+        <parameter name="userRole" value="Admin" />
+        <classes>
+            <class name="com.parallel.test.ElementsTest.TextBoxTest01"></class>
+        </classes>
+    </test>
+</suite>
