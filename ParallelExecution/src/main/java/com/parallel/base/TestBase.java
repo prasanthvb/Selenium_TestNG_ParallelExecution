@@ -63,8 +63,8 @@ public class TestBase {
     }
 
     public void initialization(String browserType, String app) {
-        folder = new File(UUID.randomUUID().toString());
-        folder.mkdir();
+ //       folder = new File(UUID.randomUUID().toString());
+//        folder.mkdir();
 //        String runLocation = System.getProperty("runenv").toString().equals("hub1")
 //                ? prop.getProperty("HUB_URL1").toString()
 //                : System.getProperty("runenv").toString().equals("hub2") ? prop.getProperty("HUB_URL2").toString()
@@ -86,16 +86,16 @@ public class TestBase {
             capability.setCapability(ChromeOptions.CAPABILITY, chromeOptions);
             Map<String, Object> prefs = new HashMap<String, Object>();
             prefs.put("profile.default_content_settings.popups", 0);
-            prefs.put("download.default_directory", folder.getAbsolutePath());
+//            prefs.put("download.default_directory", folder.getAbsolutePath());
             prefs.put("credentials_enable_service", false);
             prefs.put("profile.password_manager_enabled", false);
             chromeOptions.setExperimentalOption("prefs", prefs);
             try {
 //                if (!runLocation.equals("NA")) {
-//                    setDriver(new RemoteWebDriver(new URL(runLocation), capability));
+ //                  setDriver(new RemoteWebDriver(new URL("http://192.168.1.22:4444"), capability));
 //                    getDriver().setFileDetector(new LocalFileDetector());
 //                } else {
-                    setDriver(new ChromeDriver(chromeOptions));
+                  setDriver(new ChromeDriver(chromeOptions));
   //              }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -145,7 +145,7 @@ public class TestBase {
             capability1.setCapability(ChromeOptions.CAPABILITY, chromeOptions);
             Map<String, Object> prefs1 = new HashMap<String, Object>();
             prefs1.put("profile.default_content_settings.popups", 0);
-            prefs1.put("download.default_directory", folder.getAbsolutePath());
+//            prefs1.put("download.default_directory", folder.getAbsolutePath());
             prefs1.put("credentials_enable_service", false);
             prefs1.put("profile.password_manager_enabled", false);
             chromeOptions.setExperimentalOption("prefs", prefs1);
@@ -191,11 +191,11 @@ public class TestBase {
     public void tearDown() {
         closeBrowser();
         // Delete the download folder
-      try {
-          TestUtil.deleteDownloadfolder();
-      } catch (IOException e) {
-          e.printStackTrace();
-      }
+//      try {
+//          TestUtil.deleteDownloadfolder();
+//      } catch (IOException e) {
+//          e.printStackTrace();
+//      }
     }
 
     public static void setPropertyValue(String Key, String value, String config_path)

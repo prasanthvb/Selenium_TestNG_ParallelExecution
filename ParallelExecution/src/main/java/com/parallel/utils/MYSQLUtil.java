@@ -9,11 +9,12 @@ import java.util.*;
 
 import static com.parallel.base.TestBase.prop;
 import static com.parallel.listeners.ListenerBase.testCaseCounter;
+import static com.parallel.listeners.ListenerBase.testRunId;
 
 public class MYSQLUtil {
 
-	  static String host, port, user, password, url;
-	    static String[][] sqlData;	
+	 static String host, port, user, password, url;
+	    static String[][] sqlData;
 	    static Connection con;
 	    ResultSet rs;
 	    static Vector<String> columnNames = new Vector<String>();
@@ -120,12 +121,12 @@ public class MYSQLUtil {
 
 	    public static void connectDb() throws Exception {
 	        //connectSqlite();
-	        connectProjectMySql();
+	        connectRemitraMySql();
 	    }
 
 	    public static void connectSqlite() {
 	        try {
-	            String url = "jdbc:sqlite:C:\\Users\\prasanthvb\\AppData\\Roaming\\DBeaverData\\workspace6\\.metadata\\sample-database-sqlite-1\\Chinook.db";
+	            String url = "jdbc:sqlite:C:\\Users\\bsanthan\\AppData\\Roaming\\DBeaverData\\workspace6\\.metadata\\sample-database-sqlite-1\\Chinook.db";
 	            // db parameters
 	            connSqlite = DriverManager.getConnection(url);
 	            // create a connection to the database
@@ -134,13 +135,12 @@ public class MYSQLUtil {
 	        }
 	    }
 
-	    // DB Connection details 
-	    public static void connectProjectMySql() throws Exception {
-	        String dbUrl = "c3db01@vb.com";
+	    public static void connectRemitraMySql() throws Exception {
+	        String dbUrl = "c3duremitdb01.premierinc.com";
 	        String dbName = "automation_report";
 	        Class.forName("com.mysql.cj.jdbc.Driver");
 	        String connectionInfo = String.format("jdbc:mysql://%s/%s", dbUrl, dbName);
-	        connSqlite = DriverManager.getConnection(connectionInfo, "userName", "password");
+	        connSqlite = DriverManager.getConnection(connectionInfo, "rem_app", "remitra1");
 	    }
 
 	    public static void closeSqliteConnection() {
@@ -154,22 +154,24 @@ public class MYSQLUtil {
 	    }
 
 	    public static void insertModuleSummary(List<Map> listMap) throws Exception {
-	        for(Map map : listMap){
+	        try{
+	        for(Map map : listMap) {
 	            connectDb();
-	            String query="INSERT INTO MODULE_SUMMARY\n" +
+	            String query = "INSERT INTO MODULE_SUMMARY\n" +
 	                    "(TEST_RUN_ID, MODULE_ID, TOTAL_TESTCASES_EXECUTED, TOTAL_TESTCASES_PASSED, TOTAL_TESTCASES_FAILED, " +
 	                    "TOTAL_TESTCASES_SKIPPED, PASS_PERCENTAGE, START_TIME, END_TIME)\n" +
 	                    "VALUES('testRunIDVal', " +
-	                    "'"+ map.get("Module Name").toString()+"'," +
-	                    "'"+ (Integer.parseInt(map.get("Tests Passed").toString())+Integer.parseInt(map.get("Tests Failed").toString())+Integer.parseInt(map.get("Tests Skipped").toString()))+"'," +
-	                    "'"+ map.get("Tests Passed").toString()+"'," +
-	                    "'"+ map.get("Tests Failed").toString()+"'," +
-	                    "'"+ map.get("Tests Skipped").toString()+"'," +
+	                    "'" + map.get("Module Name").toString() + "'," +
+	                    "'" + (Integer.parseInt(map.get("Tests Passed").toString()) + Integer.parseInt(map.get("Tests Failed").toString()) + Integer.parseInt(map.get("Tests Skipped").toString())) + "'," +
+	                    "'" + map.get("Tests Passed").toString() + "'," +
+	                    "'" + map.get("Tests Failed").toString() + "'," +
+	                    "'" + map.get("Tests Skipped").toString() + "'," +
 	                    "'passPercentage'," +
 	                    "'startTimeVal'," +
 	                    "'endTimeVal')";
 	            Statement stmt = connSqlite.createStatement();
 	            stmt.executeUpdate(query);
+	        }}finally{
 	            closeSqliteConnection();
 	        }
 	    }
@@ -195,7 +197,7 @@ public class MYSQLUtil {
 	        stmt.executeUpdate(query);
 	        closeSqliteConnection();
 	    }
-
+	    
 	    public static void insertQaTestCaseSummary(Map map) throws Exception {
 	        connectDb();
 	        String query="INSERT INTO TESTCASE_SUMMARY\n" +
@@ -351,10 +353,9 @@ public class MYSQLUtil {
 	        return map.keySet().toString().replaceAll("\\[|\\]", "");
 	    }
 
-	    // Need App Name [Product] in table qa_module_details
 	    public static String getTestCaseCode(String moduleName) throws Exception {
 	        String returnString = "";
-	        String query = "select * from qa_module_details WHERE APP_NAME = 'Product' and MODULE_NAME = '"+moduleName+"'";
+	        String query = "select * from qa_module_details WHERE APP_NAME = 'Remitra' and MODULE_NAME = '"+moduleName+"'";
 	        connectDb();
 	        Statement stmt = connSqlite.createStatement();
 	        ResultSet rs = stmt.executeQuery(query);
@@ -366,18 +367,18 @@ public class MYSQLUtil {
 	        return returnString;
 	    }
 
-	    public static void updateTestCaseSummaryTable(String testStatus,String testCaseId, String testRunId) throws Exception {
+	    public static void updateTestCaseSummaryTable(String testStatus, String testCaseId, String testRunId)
+	            throws Exception {
 	        connectDb();
-	        String query = "UPDATE TESTCASE_SUMMARY SET \n" +
-	                "TEST_CASE_STATUS='"+testStatus+"', " +
-	                "END_TIME ='"+String.valueOf(new Timestamp(System.currentTimeMillis()))+"' " +
-	                "WHERE \n" +
-	                "TEST_RUN_ID='"+testRunId+"' AND TEST_CASE_ID = '"+testCaseId+"_"+String.format("%03d", testCaseCounter)+"'";
+	        String query = "UPDATE TESTCASE_SUMMARY SET \n" + "TEST_CASE_STATUS='" + testStatus + "', " + "END_TIME ='"
+	                + String.valueOf(new Timestamp(System.currentTimeMillis())) + "' " + "WHERE \n" + "TEST_RUN_ID='"
+	                + testRunId + "' AND TEST_CASE_ID = '" + testCaseId + "_" + String.format("%03d", testCaseCounter)
+	                + "'";
 	        Statement stmt = connSqlite.createStatement();
 	        stmt.executeUpdate(query);
 	        closeSqliteConnection();
 	    }
-
+	     
 	    public static Map getTestDetails(String moduleName) throws Exception {
 
 	        String[] testDetails = moduleName.split("-");
@@ -448,5 +449,36 @@ public class MYSQLUtil {
 	        closeSqliteConnection();
 	        return mapTestDetails;
 	    }
+	    
+	    public static void updateTestCaseSummaryTable(String testStatus, String description) throws Exception {
+	        connectDb();
+	        String query = "UPDATE TESTCASE_SUMMARY SET \n" + "TEST_CASE_STATUS='" + testStatus + "', " + "END_TIME ='"
+	                + String.valueOf(new Timestamp(System.currentTimeMillis())) + "' " + "WHERE TEST_CASE_NAME='"
+	                + description + "' AND \n" + "TEST_RUN_ID='" + testRunId + "'";
+	        Statement stmt = connSqlite.createStatement();
+	        stmt.executeUpdate(query);
+	        closeSqliteConnection();
+	    }
+	    
+	    public static void updateTestCaseSummaryTable(String testStatus, String description, Throwable exception)
+	            throws Exception {
+	        String exceptiontxt="";
+	        connectDb();
+	        if(exception.toString().length()>81)
+	        {
+	            exceptiontxt=exception.toString().substring(0,80);
+	        }
+	        else{
+	            exceptiontxt=exception.toString();
+	        }
+	        String query = "UPDATE TESTCASE_SUMMARY SET \n" + "TEST_CASE_STATUS='" + testStatus + "', " + "END_TIME ='"
+	                + String.valueOf(new Timestamp(System.currentTimeMillis())) + "', EXCEPTION_ERROR_MESSAGE = '"
+	                + exceptiontxt + "' " + "WHERE TEST_CASE_NAME='" + description + "' AND \n" + "TEST_RUN_ID='" + testRunId
+	                + "'";
+	        Statement stmt = connSqlite.createStatement();
+	        stmt.executeUpdate(query);
+	        closeSqliteConnection();
+	    }
 
-}
+	}
+

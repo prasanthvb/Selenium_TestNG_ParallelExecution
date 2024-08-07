@@ -119,7 +119,7 @@ public class ExcelUtils {
         }
     }
 
-    public static void updateTestSummary(String excelFileNameWithPath, String sheetName, int row, int column) {
+    public static void updateTestSummary(String excelFileNameWithPath, String sheetName, int row, int column, int count) {
         try {
             FileInputStream ExcelFile = new FileInputStream(excelFileNameWithPath);
             // Access the required test data sheet
@@ -129,12 +129,13 @@ public class ExcelUtils {
             if(sheetrow == null){sheetrow = ExcelWSheet.createRow(row);}
             org.apache.poi.ss.usermodel.Cell cell = null;
             cell = sheetrow.getCell(column);
-            if(cell == null){
+//            if(cell == null){
                 cell = sheetrow.createCell(column);
-                cell.setCellValue("1");
-            } else {
-                cell.setCellValue(String.valueOf(Integer.parseInt(getCellData(row,column))+1));
-            }
+                cell.setCellValue(String.valueOf(count));
+//                cell.setCellValue("1");
+//            } else {
+//                cell.setCellValue(String.valueOf(Integer.parseInt(getCellData(row,column))+1));
+//            }
             ExcelFile.close();
             FileOutputStream outFile =new FileOutputStream(new File(excelFileNameWithPath));
             ExcelWBook.write(outFile);

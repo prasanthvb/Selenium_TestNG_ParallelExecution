@@ -1,6 +1,9 @@
 package com.parallel.report;
 
 import static com.parallel.listeners.ListenerBase.authorName;
+import static com.parallel.listeners.ListenerBase.userRole;
+import static com.parallel.listeners.ListenerBase.testType;
+import static com.parallel.listeners.ListenerBase.environment;
 import static com.parallel.listeners.ListenerBase.getRowCountForSummary;
 import static com.parallel.listeners.ListenerBase.getRowCountForTestResultsFile;
 import static com.parallel.listeners.ListenerBase.getTestResultsFileName;
@@ -20,6 +23,7 @@ import org.testng.ITestContext;
 
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
+import com.parallel.listeners.ListenerBase;
 import com.parallel.utils.FrameworkConstant;
 
 public class ExtentReportNG {
@@ -30,7 +34,8 @@ public class ExtentReportNG {
 
 		moduleName = context.getCurrentXmlTest().getParameter("module");
 		authorName = context.getCurrentXmlTest().getParameter("author");
-		testResultsFileName = getTestResultsFileName(context, moduleName);
+		userRole = context.getCurrentXmlTest().getParameter("userRole");
+		testResultsFileName = userRole+ " "+getTestResultsFileName(context, moduleName);
 		if (reportCreated == false) {
 			extent = new ExtentReports();
 			ExtentSparkReporter spark = new ExtentSparkReporter(EXTENTREPORT_PATH + testResultsFileName);
@@ -48,4 +53,29 @@ public class ExtentReportNG {
 		return extent;
 	}
 
+	public static ExtentReports setupExtentReportDB(ITestContext context) throws Exception {
+
+		moduleName = context.getCurrentXmlTest().getParameter("module");
+		authorName = context.getCurrentXmlTest().getParameter("author");
+		userRole = context.getCurrentXmlTest().getParameter("userRole");
+		testType = context.getCurrentXmlTest().getParameter("executionType");
+		environment = context.getCurrentXmlTest().getParameter("url");
+		testResultsFileName = userRole+ " "+getTestResultsFileName(context, moduleName);
+		if (reportCreated == false) {
+			extent = new ExtentReports();
+			ExtentSparkReporter spark = new ExtentSparkReporter(EXTENTREPORT_PATH + testResultsFileName);
+			spark.loadXMLConfig(new File(FrameworkConstant.EXTENT_CONFIG_PATH));
+			extent.attachReporter(spark);
+			reportCreated = isRegressionExecution(context) ? true : false;
+			createExcel(TEST_RESULT_SUMMARY);
+			updateExcelSheetRowColumn(TEST_RESULT_SUMMARY, "TestResultsFile",
+					getRowCountForTestResultsFile(testResultsFileName), 0, EXTENTREPORT_PATH + testResultsFileName);
+			updateExcelSheetRowColumn(TEST_RESULT_SUMMARY, "TestResultsFile",
+					getRowCountForTestResultsFile(testResultsFileName), 1, testResultsFileName);
+			setEmailAddress(context);
+			ListenerBase.setDbValuesOnStart(moduleName, userRole);
+		}
+		updateExcelSheetRowColumn(TEST_RESULT_SUMMARY, "Summary", getRowCountForSummary(moduleName), 0, moduleName);
+		return extent;
+	}
 }

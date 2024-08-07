@@ -22,12 +22,13 @@ public class CustomAssertion extends Assertion {
 	    public static ExtentTest extentNode;
 
 	    @Override
-	    public void onBeforeAssert(IAssert a) {
+	    public void onBeforeAssert(IAssert<?> a) {
 	        try {
-//	          if(!testDescription.equals(extentTestListnerDB.description)){
-//	              extentNode = extentTestListnerDB.test.createNode(extentTestListnerDB.description);
-//	                testDescription = extentTestListnerDB.description;
-//	            }
+	        	ExtentTestListener extentListner = new ExtentTestListener();
+	          if(!testDescription.equals(extentListner.description)){
+	              extentNode = extentListner.test.createNode(extentListner.description);
+	                testDescription = extentListner.description;
+	            }
 	        } catch (Exception e) {
 //	            if(!testDescription.equals(description)){
 //	                extentNode = test.createNode(description);
@@ -37,7 +38,7 @@ public class CustomAssertion extends Assertion {
 	    }
 
 	    @Override
-	    public void onAfterAssert(IAssert a) {}
+	    public void onAfterAssert(IAssert<?> a) {}
 
 	    @Override
 	    public void onAssertSuccess(IAssert<?> assertCommand) {

@@ -26,6 +26,8 @@ public class ListenerBase {
 	    public static String moduleName;
 	    public static String userRole;
 	    public static String authorName;
+	    public static String testType;
+	    public static String environment;
 	    public static String testResultsFileName;
 	    public static String testRunId = "", moduleNameUnderExecution = "";
 	    public static String testExecutionStartTime, moduleExecutionStartTime,testCaseId,startTime;
@@ -100,9 +102,9 @@ public class ListenerBase {
 	        return Integer.parseInt(fetchPropertyValue("emailAddressRowCountForExcel",FrameworkConstant.PROPERTYFILE_PATH).toString());
 	    }
 
-	    public static void updateTestResultsCount(int columnNumber) {
+	    public static void updateTestResultsCount(int columnNumber, int count) {
 	        try {
-	            updateTestSummary(TEST_RESULT_SUMMARY,"Summary",getRowCountForSummary(moduleName),columnNumber);
+	            updateTestSummary(TEST_RESULT_SUMMARY,"Summary",getRowCountForSummary(moduleName),columnNumber, count);
 	        } catch (Exception e) {
 	            throw new RuntimeException(e);
 	        }
@@ -148,7 +150,7 @@ public class ListenerBase {
 	        //testCaseId = getTestCaseCode(moduleName);
 	    }
 
-	    public static void insertTestCaseSummaryOnStart(String description, String moduleName, String userRole) throws Exception {
+	    public static void insertTestCaseSummaryOnStart(String description, String moduleName) throws Exception {
 	        testCaseCounter = moduleName.equalsIgnoreCase(moduleNameUnderExecution) ? testCaseCounter+1 : 1;
 	        Map mapTestDetails = getTestDetails(moduleName,description);
 	        startTime = String.valueOf(new Timestamp(System.currentTimeMillis()));
@@ -166,7 +168,7 @@ public class ListenerBase {
 	            mapTestCaseSummary.put("RUN_ENVIRONMENT","QA");
 	            mapTestCaseSummary.put("TEST_TYPE","Regression");
 	            mapTestCaseSummary.put("USER_ROLE",userRole);
-	            mapTestCaseSummary.put("EXECUTED_BY",System.getProperty("user.name").toString());
+	            mapTestCaseSummary.put("EXECUTED_BY",authorName);
 	            mapTestCaseSummary.put("START_TIME",startTime);
 	            mapTestCaseSummary.put("END_TIME",startTime);
 	            insertQaTestCaseSummary(mapTestCaseSummary);

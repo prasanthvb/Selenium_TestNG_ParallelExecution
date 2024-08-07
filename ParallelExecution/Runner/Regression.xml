@@ -2,7 +2,7 @@
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
 <suite name="Regression Suite" parallel="classes" thread-count="4">
     <listeners>
-        <listener class-name="com.qatracker.listeners.extentTestListnerDB" />
+        <listener class-name="com.parallel.listeners.ExtentTestListener" />
     </listeners>
     <parameter name="sendemail" value="" />
     <test name="Demo Test">

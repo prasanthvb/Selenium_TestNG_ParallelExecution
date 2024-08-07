@@ -25,8 +25,7 @@ public final class Log extends TestBase{
      * @param message --> Message which wanted to pass.
      */
     public static void pass(String message) {
-        ExtentManager.getInstance().getExtentTest().pass(message);
-        updateTestResultsCount(1);
+        ExtentFactory.getInstance().getExtent().pass(message);
     }
 
     /**
@@ -38,9 +37,8 @@ public final class Log extends TestBase{
      *                             screenshot attachment.
      */
     public static void pass(String message, boolean isScreenShotRequired) {
-        ExtentManager.getInstance().getExtentTest().pass(message,
-                MediaEntityBuilder.createScreenCaptureFromBase64String(TestUtil.getscreenBase64(getDriver())).build());
-        updateTestResultsCount(1);
+    	ExtentFactory.getInstance().getExtent().pass(message,
+                MediaEntityBuilder.createScreenCaptureFromBase64String(TestUtil.getscreenBase64(getDriver())).build());       
     }
 
     /**
@@ -52,9 +50,8 @@ public final class Log extends TestBase{
      *                             screenshot attachment.
      */
     public static void fail(String message, boolean isScreenShotRequired) {
-        ExtentManager.getInstance().getExtentTest().fail(message,
+    	ExtentFactory.getInstance().getExtent().fail(message,
                 MediaEntityBuilder.createScreenCaptureFromBase64String(TestUtil.getscreenBase64(getDriver())).build());
-        updateTestResultsCount(2);
     }
 
     /**
@@ -63,8 +60,7 @@ public final class Log extends TestBase{
      * @param message --> Message which wanted to fail.
      */
     public static void fail(String message) {
-        ExtentManager.getInstance().getExtentTest().fail(message);
-        updateTestResultsCount(2);
+    	ExtentFactory.getInstance().getExtent().fail(message);
         //ExtentManager.getInstance().removeExtentObject();
     }
 
@@ -74,7 +70,7 @@ public final class Log extends TestBase{
      * @param message --> Message which wanted to mark as info.
      */
     public static void info(String message) {
-        ExtentManager.getInstance().getExtentTest().info(message);
+    	ExtentFactory.getInstance().getExtent().info(message);
     }
 
     /**
@@ -83,8 +79,7 @@ public final class Log extends TestBase{
      * @param message --> Message which wanted to mark as skip.
      */
     public static void skip(String message) {
-        ExtentManager.getInstance().getExtentTest().skip(message);
-        updateTestResultsCount(3);
+    	ExtentFactory.getInstance().getExtent().skip(message);
     }
 
     /**
@@ -93,7 +88,7 @@ public final class Log extends TestBase{
      * @param message --> Message which wanted to mark as warning.
      */
     public static void warning(String message) {
-        ExtentManager.getInstance().getExtentTest().warning(message);
+    	ExtentFactory.getInstance().getExtent().warning(message);
     }
 
 }

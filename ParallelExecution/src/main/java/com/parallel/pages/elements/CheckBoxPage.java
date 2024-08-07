@@ -1,6 +1,7 @@
 package com.parallel.pages.elements;
 
-import org.apache.commons.lang3.ArrayUtils;
+
+import org.apache.commons.lang.ArrayUtils;
 import org.openqa.selenium.By;
 
 import com.parallel.base.TestBase;
