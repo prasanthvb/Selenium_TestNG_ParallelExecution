@@ -23,7 +23,7 @@ public class TextBoxPage extends TestBase {
 
 	public String assertionResponse(String response) {
 		int i = ArrayUtils.indexOf(StaticVariables.RESPONSES, response);
-		return TestUtil.getTexts(getDriver(), assertion, i);
+		return TestUtil.getText(getDriver(), assertion, i);
 	}
 
 	public void enterFullName(String credentials) {

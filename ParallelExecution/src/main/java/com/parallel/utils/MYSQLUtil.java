@@ -1,15 +1,25 @@
 package com.parallel.utils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.sql.*;
-import java.text.DecimalFormat;
-import java.util.*;
-
 import static com.parallel.base.TestBase.prop;
 import static com.parallel.listeners.ListenerBase.testCaseCounter;
 import static com.parallel.listeners.ListenerBase.testRunId;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Vector;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MYSQLUtil {
 
@@ -29,7 +39,7 @@ public class MYSQLUtil {
 	        port = prop.getProperty("MYSQLport");
 	        user = prop.getProperty("MYSQLuser");
 	        password = prop.getProperty("MYSQLpassword");
-	        url = "jdbc:mysql://" + host + ":" + port + "/IDS";
+	        url = "jdbc:mysql://" + host + ":" + port + "/DBname";
 
 
 	        Class.forName("com.mysql.cj.jdbc.getDriver()");
@@ -126,7 +136,7 @@ public class MYSQLUtil {
 
 	    public static void connectSqlite() {
 	        try {
-	            String url = "jdbc:sqlite:C:\\Users\\bsanthan\\AppData\\Roaming\\DBeaverData\\workspace6\\.metadata\\sample-database-sqlite-1\\Chinook.db";
+	            String url = "jdbc:sqlite:C:\\Users\\prasanth\\AppData\\Roaming\\DBeaverData\\workspace6\\.metadata\\sample-database-sqlite-1\\Chinook.db";
 	            // db parameters
 	            connSqlite = DriverManager.getConnection(url);
 	            // create a connection to the database
@@ -136,11 +146,11 @@ public class MYSQLUtil {
 	    }
 
 	    public static void connectRemitraMySql() throws Exception {
-	        String dbUrl = "c3duremitdb01.premierinc.com";
+	        String dbUrl = "abc.product.com";
 	        String dbName = "automation_report";
 	        Class.forName("com.mysql.cj.jdbc.Driver");
 	        String connectionInfo = String.format("jdbc:mysql://%s/%s", dbUrl, dbName);
-	        connSqlite = DriverManager.getConnection(connectionInfo, "rem_app", "remitra1");
+	        connSqlite = DriverManager.getConnection(connectionInfo, "username", "password");
 	    }
 
 	    public static void closeSqliteConnection() {
@@ -355,7 +365,7 @@ public class MYSQLUtil {
 
 	    public static String getTestCaseCode(String moduleName) throws Exception {
 	        String returnString = "";
-	        String query = "select * from qa_module_details WHERE APP_NAME = 'Remitra' and MODULE_NAME = '"+moduleName+"'";
+	        String query = "select * from qa_module_details WHERE APP_NAME = 'Product' and MODULE_NAME = '"+moduleName+"'";
 	        connectDb();
 	        Statement stmt = connSqlite.createStatement();
 	        ResultSet rs = stmt.executeQuery(query);

@@ -67,6 +67,7 @@ public final class FrameworkConstant {
     public static final String ENVIRONMENT = "Test";
 
     public static final String YES = "yes";
+	public static final int RETRY_COUNT = 2;
 
 }
 

@@ -49,7 +49,7 @@ public class CheckBoxPage extends TestBase {
 	}
 
 	public String getResponse(int i) {
-		return TestUtil.getTexts(getDriver(), response, i);
+		return TestUtil.getText(getDriver(), response, i);
 	}
 
 	public String result() {

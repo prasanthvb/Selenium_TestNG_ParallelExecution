@@ -5,6 +5,10 @@ import static java.time.Duration.ofSeconds;
 import java.awt.AWTException;
 import java.awt.Desktop;
 import java.awt.Robot;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
@@ -17,11 +21,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
@@ -130,6 +137,18 @@ public class TestUtil extends TestBase {
 		}
 	}
 
+	// To Switch into a Frame using Index.
+	public static void switchToFrame(WebDriver driver, int frame) {
+		try {
+			driver.switchTo().frame(frame);
+			System.out.println("Navigated to Frame with Index ::: " + frame);
+		} catch (NoSuchFrameException e) {
+			System.out.println("Unable to Locate Frame with Index ::: " + frame + e.getStackTrace());
+		} catch (Exception e) {
+			System.out.println("Unable to Navigate to Frame with Index ::: " + frame + e.getStackTrace());
+		}
+	}
+
 	// To Take Screenshot at End Of Test.
 	public static void takeScreenshotAtEndOfTest() throws IOException {
 		File scrFile = ((TakesScreenshot) getDriver()).getScreenshotAs(OutputType.FILE);
@@ -139,6 +158,7 @@ public class TestUtil extends TestBase {
 
 	// Explicit Wait to Click on WebElement.
 	public static void clickOn(WebDriver driver, By element) {
+		scrollTillElementVisible(driver, element);
 		new WebDriverWait(driver, Duration.ofSeconds(20))
 				.until(ExpectedConditions.elementToBeClickable(driver.findElement(element)));
 		findElement(driver, element).click();
@@ -149,6 +169,12 @@ public class TestUtil extends TestBase {
 	public static void clickOn(WebDriver driver, WebElement element) {
 		new WebDriverWait(driver, Duration.ofSeconds(20)).until(ExpectedConditions.elementToBeClickable(element));
 		element.click();
+	}
+
+	// Zoom in and Zoom out Application
+	public static void zoomInAndOut(WebDriver driver, String size) {
+		JavascriptExecutor js = (JavascriptExecutor) driver;
+		js.executeScript("document.body.style.zoom='" + size + "%'");
 	}
 
 	// Explicit Wait to Click on WebElement.
@@ -199,6 +225,11 @@ public class TestUtil extends TestBase {
 		findElement(driver, element).clear();
 	}
 
+	public static void clearAndSendKeys(WebDriver driver, By element, String value) {
+		clearValue(driver, element);
+		findElement(driver, element).sendKeys(value);
+	}
+
 	// Explicit Wait for Element To Be Visible.
 	public static void waitForElementToBeVisible(WebDriver driver, WebElement locator) {
 		new WebDriverWait(driver, Duration.ofSeconds(30)).until(ExpectedConditions.visibilityOf(locator));
@@ -215,8 +246,13 @@ public class TestUtil extends TestBase {
 		new WebDriverWait(driver, Duration.ofSeconds(30)).until(ExpectedConditions.visibilityOfAllElements(locator));
 	}
 
+	public static void ScrollDownToMid(WebDriver driver) {
+		JavascriptExecutor js = (JavascriptExecutor) driver;
+		js.executeScript("window.scrollBy(0, 300)");
+	}
+
 	public static void waitForAllElementToBeVisible(WebDriver driver, By locator) {
-		new WebDriverWait(driver, Duration.ofSeconds(30))
+		new WebDriverWait(driver, Duration.ofSeconds(60))
 				.until(ExpectedConditions.visibilityOfAllElements(driver.findElement(locator)));
 	}
 
@@ -236,8 +272,8 @@ public class TestUtil extends TestBase {
 		TestUtil.waitForElementToBeVisible(driver, locator);
 		return locator.getText();
 	}
-
-	public static String getTexts(WebDriver driver, By locator, int i) {
+	
+	public static String getText(WebDriver driver, By locator, int i) {	
 		return elements(driver, locator).get(i).getText();
 	}
 
@@ -246,15 +282,25 @@ public class TestUtil extends TestBase {
 		new WebDriverWait(driver, Duration.ofSeconds(30)).until(ExpectedConditions.presenceOfElementLocated(locator));
 	}
 
+	public static void waitForpresenceOfElementLocated(WebDriver driver, By locator, int timeOutInSec) {
+		new WebDriverWait(driver, Duration.ofSeconds(timeOutInSec))
+				.until(ExpectedConditions.presenceOfElementLocated(locator));
+	}
+
 	// Explicit Wait for Element To Be Clickable.
 	public static void waitForElementToBeClickable(WebDriver driver, By locator) {
-		new WebDriverWait(driver, Duration.ofSeconds(30)).until(ExpectedConditions.elementToBeClickable(locator));
+		new WebDriverWait(driver, Duration.ofSeconds(120)).until(ExpectedConditions.elementToBeClickable(locator));
+	}
+
+	public static void waitForElementToBeClickable(WebDriver driver, WebElement locator) {
+		new WebDriverWait(driver, Duration.ofSeconds(120)).until(ExpectedConditions.elementToBeClickable(locator));
 	}
 
 	public static boolean isDisplayed(WebDriver driver, By element) {
 		try {
+			TestUtil.waitForElementToBeVisible(driver, element);
 			return driver.findElement(element).isDisplayed();
-		} catch (NoSuchElementException e) {
+		} catch (NoSuchElementException | TimeoutException e) {
 			return false;
 		}
 	}
@@ -288,28 +334,14 @@ public class TestUtil extends TestBase {
 		}
 	}
 
-	// To Handle Multiple Windows or Switch Between Multiple Windows.
-	public static void switchWindow(WebDriver driver, String firstWindow, String secondWindow) {
-		Set<String> windowHandles = driver.getWindowHandles();
-		for (String windows : windowHandles) {
-			if (!windows.equals(firstWindow) && !windows.equals(secondWindow)) {
-				driver.switchTo().window(windows);
-			}
-		}
-	}
-
-	public static void switchToNextTab(WebDriver driver) {
-		ArrayList<String> tabs = new ArrayList<String>(driver.getWindowHandles());
-		driver.switchTo().window(tabs.get(1));
-	}
-
 	// To Check Element is Displayed or No.
-	public static void isElementDisplayed(WebElement element) {
-		boolean elementDisplayed = element.isDisplayed();
-		if (elementDisplayed) {
-			System.out.println("Element is Displayed");
-		} else {
-			System.out.println("Element is not Displayed");
+	public static boolean isElementDisplayed(By locator, int timeout) {
+		try {
+			WebDriverWait wait = new WebDriverWait(getDriver(), Duration.ofSeconds(timeout));
+			WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
+			return element.isDisplayed();
+		} catch (NoSuchElementException | TimeoutException e) {
+			return false;
 		}
 	}
 
@@ -359,12 +391,19 @@ public class TestUtil extends TestBase {
 	// To Print all Values and Select a Required Value from Drop Down.
 	public static void selectDropDownValue(WebDriver driver, String xpathValue, String value) {
 		List<WebElement> monthList = driver.findElements(By.xpath(xpathValue));
-//      System.out.println(monthList.size());
+		for (WebElement webElement : monthList) {
+			if (webElement.getText().contains(value)) {
+				webElement.click();
+				break;
+			}
+		}
+	}
 
-		for (int i = 0; i < monthList.size(); i++) {
-//          System.out.println(monthList.get(i).getText());
-			if (monthList.get(i).getText().equals(value)) {
-				monthList.get(i).click();
+	public static void selectDropDownParticularValue(WebDriver driver, String xpathValue, String value) {
+		List<WebElement> monthList = driver.findElements(By.xpath(xpathValue));
+		for (WebElement webElement : monthList) {
+			if (webElement.getText().equals(value)) {
+				webElement.click();
 				break;
 			}
 		}
@@ -381,8 +420,16 @@ public class TestUtil extends TestBase {
 
 	public static void selectDropDownValuebylist(WebDriver driver, By dropdown, String value) {
 		for (int i = 0; i < driver.findElements(dropdown).size(); i++) {
-			System.out.println(driver.findElements(dropdown).get(i).getText());
-			if (driver.findElements(dropdown).get(i).getText().equals(value)) {
+			if (driver.findElements(dropdown).get(i).getText().equalsIgnoreCase(value)) {
+				driver.findElements(dropdown).get(i).click();
+				break;
+			}
+		}
+	}
+
+	public static void selectDropDownValuebyIndex(WebDriver driver, By dropdown, int index) {
+		for (int i = 0; i < driver.findElements(dropdown).size(); i++) {
+			if ((i + 1) == index) {
 				driver.findElements(dropdown).get(i).click();
 				break;
 			}
@@ -397,6 +444,11 @@ public class TestUtil extends TestBase {
 	public static WebElement getTheTextOfOptionSelectedFromDropdown(WebDriver driver, By element) {
 		Select select = new Select(driver.findElement(element));
 		return select.getFirstSelectedOption();
+	}
+
+	public static List<WebElement> getAllOptionsFromDropdown(WebDriver driver, By element) {
+		Select select = new Select(TestUtil.findElement(driver, element));
+		return select.getOptions();
 	}
 
 	// To Validate Drop Down Values.
@@ -434,10 +486,8 @@ public class TestUtil extends TestBase {
 	public static void acceptAlertPopup() throws InterruptedException {
 		try {
 			alert = getDriver().switchTo().alert();
-			System.out.println(alert.getText());
 			Thread.sleep(2000);
 			alert.accept();
-			System.out.println("Alert Accepted Successfully");
 		} catch (Exception e) {
 			System.out.println("Something Went Wrong ==>> Please Check ::: " + e.getMessage());
 		}
@@ -447,10 +497,8 @@ public class TestUtil extends TestBase {
 	public static void dismissAlertPopup() throws InterruptedException {
 		try {
 			alert = getDriver().switchTo().alert();
-			System.out.println(alert.getText());
 			Thread.sleep(2000);
 			alert.dismiss();
-			System.out.println("Alert Dismissed Successfully");
 		} catch (Exception e) {
 			System.out.println("Something Went Wrong ==>> Please Check ::: " + e.getMessage());
 		}
@@ -468,44 +516,44 @@ public class TestUtil extends TestBase {
 
 	// To Click on Element using Actions Class.
 	public static void clickOnElementUsingActions(WebElement element) {
-		Actions actions = new Actions(getDriver());
+		actions = new Actions(getDriver());
 		actions.moveToElement(element).click().perform();
 	}
 
 	// To Mouse Hover and Click or Select an Element using Actions Class.
 	public static void moveToElement(WebDriver driver, WebElement element) {
-		Actions actions = new Actions(driver);
+		actions = new Actions(driver);
 		actions.moveToElement(element).build().perform();
 	}
 
 	// To Mouse Hover and Click or Select an Element using Actions Class.
 	public static void moveToElement(WebDriver driver, By element) {
-		Actions actions = new Actions(driver);
+		actions = new Actions(driver);
 		actions.moveToElement(driver.findElement(element)).build().perform();
 	}
 
 	// To Perform Drag and Drop action using Actions Class - 1.
 	public static void dragAndDrop_1(WebDriver driver, WebElement sourceElement, WebElement destinationElement) {
-		Actions actions = new Actions(driver);
+		actions = new Actions(driver);
 		actions.dragAndDrop(sourceElement, destinationElement).pause(ofSeconds(2)).release().build().perform();
 	}
 
 	// To Perform Drag and Drop action using Actions Class - 2.
 	public static void dragAndDrop_2(WebDriver driver, WebElement sourceElement, WebElement destinationElement) {
-		Actions actions = new Actions(driver);
+		actions = new Actions(driver);
 		actions.clickAndHold(sourceElement).pause(ofSeconds(2)).moveToElement(destinationElement).pause(ofSeconds(2))
 				.release().build().perform();
 	}
 
 	// To Perform Right Click action using Actions Class.
 	public static void rightClick(WebDriver driver, By locator) {
-		Actions actions = new Actions(driver);
+		actions = new Actions(driver);
 		actions.contextClick(element(driver, locator)).build().perform();
 	}
 
 	// To perform Double Click action using Actions Class.
 	public static void doubleClick(WebDriver driver, By locator) {
-		Actions actions = new Actions(driver);
+		actions = new Actions(driver);
 		actions.doubleClick(element(driver, locator)).build().perform();
 	}
 
@@ -543,7 +591,9 @@ public class TestUtil extends TestBase {
 	// Generates a random n-digit number
 	public static int randomNumberGenerator(int n) {
 		Random no = new Random();
-		return (int) (Math.pow(10, n - 1) + no.nextInt(9 * (int) (Math.pow(10, n - 1))));
+		int origin = (int) Math.pow(10, n - 1);
+		int boundMinusOrigin = (int) (Math.pow(10, n) - Math.pow(10, n - 1) - 1);
+		return (origin + no.nextInt(boundMinusOrigin));
 	}
 
 	public static void pageScrollDown(WebDriver driver) {
@@ -566,9 +616,18 @@ public class TestUtil extends TestBase {
 		js.executeScript("window.scrollBy(0, -document.body.scrollHeight)");
 	}
 
+	public static void ScrollToTop(WebDriver driver) {
+		((JavascriptExecutor) driver).executeScript("window.scrollTo(document.body.scrollHeight, 0)");
+	}
+
 	public static void pageScrollLeft(WebDriver driver) {
 		JavascriptExecutor js = (JavascriptExecutor) driver;
 		js.executeScript("window.scrollBy(-500, 0)");
+	}
+
+	public static void pageScrollright(WebDriver driver) {
+		JavascriptExecutor js = (JavascriptExecutor) driver;
+		js.executeScript("window.scrollBy(500, 0)");
 	}
 
 	public static String getscreenBase64(WebDriver driver) {
@@ -642,7 +701,7 @@ public class TestUtil extends TestBase {
 		robot.keyRelease(KeyEvent.VK_ALT);
 	}
 
-	public void closViewDownLoads() throws AWTException {
+	public void closeViewDownLoads() throws AWTException {
 		Robot robot = new Robot();
 		// press key Alt+C
 		robot.keyPress(KeyEvent.VK_ALT);
@@ -683,7 +742,7 @@ public class TestUtil extends TestBase {
 	// This method for generic file path for upload file
 	public static void fileUpload(WebDriver driver, String filePath, By element) {
 		File file = new File(filePath);
-		sendKeys(driver, element, file.getAbsolutePath());
+		driver.findElement(element).sendKeys(file.getAbsolutePath());
 	}
 
 	public static void fileUpload(WebDriver driver, String filePath, WebElement element) {
@@ -692,13 +751,13 @@ public class TestUtil extends TestBase {
 	}
 
 	// This method for close print window//
-	public void closePrintWindow() throws AWTException {
+	public static void closePrintWindow() throws AWTException {
 		Robot robotObject = new Robot();
 		robotObject.keyPress(KeyEvent.VK_ESCAPE);
 		robotObject.keyRelease(KeyEvent.VK_ESCAPE);
 	}
 
-	public void closeNextTab() {
+	public static void closeNextTab() {
 		ArrayList<String> switchTabs = new ArrayList<String>(getDriver().getWindowHandles());
 		getDriver().switchTo().window(switchTabs.get(1));
 		getDriver().close();
@@ -737,7 +796,6 @@ public class TestUtil extends TestBase {
 	}
 
 	public static void resultTableVali(List<WebElement> resultTableHeader, List<WebElement> resultTableRows) {
-
 		TestUtil.waitForElementToBeVisible(getDriver(), resultTableHeader.get(0));
 		List<String> allHeaderNames = new ArrayList<String>();
 		for (WebElement header : resultTableHeader) {
@@ -772,17 +830,16 @@ public class TestUtil extends TestBase {
 	}
 
 	public static String getTodayDate() {
-		LocalDate dateObj = LocalDate.now();
+		LocalDate date = LocalDate.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-		String todayDate = dateObj.format(formatter);
-		return todayDate;
+		String formattedDate = date.format(formatter);
+		return formattedDate;
 	}
 
 	public static String generateTIN() {
-		Random random = new Random();
-		int tin = random.nextInt(999999);
-		String tinNo = "98-".concat(String.valueOf(tin));
-		return tinNo;
+		int charLength = 7;
+		int tin = new Random().nextInt((int) Math.pow(10, charLength));
+		return "98-" + String.format("%07d", tin);
 	}
 
 	public static void verifyURLContains(WebDriver driver, String expected) {
@@ -810,7 +867,7 @@ public class TestUtil extends TestBase {
 	 */
 	public static void waitForPageLoad() {
 
-		WebDriverWait wait = new WebDriverWait(getDriver(), Duration.ofSeconds(30));
+		WebDriverWait wait = new WebDriverWait(getDriver(), Duration.ofSeconds(60));
 
 		wait.until(new ExpectedCondition<Boolean>() {
 			public Boolean apply(WebDriver wdriver) {
@@ -829,12 +886,18 @@ public class TestUtil extends TestBase {
 	}
 
 	/**
+	 * This method is to reload the web page with same url
+	 */
+	public static void reloadURL(WebDriver driver) {
+		driver.get(driver.getCurrentUrl());
+	}
+
+	/**
 	 * This method is to verify the display of particular element by waiting for the
 	 * given seconds
 	 *
 	 * @param locator - xpath for the element to be verified
 	 * @param timeout - int seconds - to be waited
-	 *
 	 * @return boolean true - if the element is displayed else - false
 	 */
 	public static boolean isElementDisplayed(String locator, int timeout) {
@@ -842,10 +905,7 @@ public class TestUtil extends TestBase {
 			WebElement element = getDriver().findElement(By.xpath(locator));
 			WebDriverWait wait = new WebDriverWait(getDriver(), Duration.ofSeconds(timeout));
 			wait.until(ExpectedConditions.visibilityOf(element));
-			if (element.isDisplayed())
-				return true;
-			else
-				return false;
+			return element.isDisplayed();
 		} catch (NoSuchElementException e) {
 			return false;
 		}
@@ -855,22 +915,17 @@ public class TestUtil extends TestBase {
 	 * This method is to verify the display of particular element by waiting for the
 	 * given seconds
 	 *
+	 * @param driver  - Webdriver object
 	 * @param element - element to be verified
 	 * @param timeout - int seconds - to be waited
-	 *
 	 * @return boolean true - if the element is displayed else - false
 	 */
 	public static boolean waitUntilElementDisplayed(WebDriver driver, By element, int timeout) {
 		try {
 			WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeout));
 			wait.until(ExpectedConditions.visibilityOf(driver.findElement(element)));
-			if (driver.findElement(element).isDisplayed())
-				return true;
-			else
-				return false;
-		} catch (NoSuchElementException e) {
-			return false;
-		} catch (TimeoutException e) {
+			return driver.findElement(element).isDisplayed();
+		} catch (NoSuchElementException | TimeoutException e) {
 			return false;
 		}
 	}
@@ -879,13 +934,8 @@ public class TestUtil extends TestBase {
 		try {
 			WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeout));
 			wait.until(ExpectedConditions.visibilityOf(element));
-			if (element.isDisplayed())
-				return true;
-			else
-				return false;
-		} catch (NoSuchElementException e) {
-			return false;
-		} catch (TimeoutException e) {
+			return element.isDisplayed();
+		} catch (NoSuchElementException | TimeoutException e) {
 			return false;
 		}
 	}
@@ -896,17 +946,13 @@ public class TestUtil extends TestBase {
 	 *
 	 * @param element - web element to be focused
 	 * @param timeout - int seconds - to be waited
-	 *
 	 * @return boolean - true if the element is not available else false
 	 */
 	public static boolean waitUntilElementDisappears(WebDriver driver, By element, int timeout) {
 		try {
 			WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeout));
-			wait.until(ExpectedConditions.invisibilityOf(findElement(driver, element)));
-			return true;
-		} catch (NoSuchElementException e) {
-			return false;
-		} catch (TimeoutException e) {
+			return wait.until(ExpectedConditions.invisibilityOf(findElement(driver, element)));
+		} catch (NoSuchElementException | TimeoutException e) {
 			return false;
 		}
 	}
@@ -914,11 +960,8 @@ public class TestUtil extends TestBase {
 	public static boolean waitUntilElementDisappears(WebDriver driver, WebElement element, int timeout) {
 		try {
 			WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeout));
-			wait.until(ExpectedConditions.invisibilityOf(element));
-			return true;
-		} catch (NoSuchElementException e) {
-			return false;
-		} catch (TimeoutException e) {
+			return wait.until(ExpectedConditions.invisibilityOf(element));
+		} catch (NoSuchElementException | TimeoutException e) {
 			return false;
 		}
 	}
@@ -928,9 +971,9 @@ public class TestUtil extends TestBase {
 	 *
 	 * @param element - element up to which the scroll to be happened
 	 */
-	public static void scrollTillElementVisible(WebDriver driver, WebElement locator) {
+	public static void scrollTillElementVisible(WebElement element) {
 		try {
-			((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", (locator));
+			((JavascriptExecutor) getDriver()).executeScript("arguments[0].scrollIntoView(true);", element);
 		} catch (NoSuchElementException e) {
 			e.getClass();
 		}
@@ -938,7 +981,9 @@ public class TestUtil extends TestBase {
 
 	public static void scrollTillElementVisible(WebDriver driver, By element) {
 		try {
-			((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element(driver, element));
+			((JavascriptExecutor) getDriver()).executeScript(
+					"arguments[0].scrollIntoView({behavior : 'smooth', block : 'center', inline: 'center'});",
+					getDriver().findElement(element));
 		} catch (NoSuchElementException e) {
 			e.getClass();
 		}
@@ -979,6 +1024,28 @@ public class TestUtil extends TestBase {
 	}
 
 	/**
+	 * This method is to get the current date and time of OS
+	 *
+	 * @return String - current Date Time of OS
+	 */
+	public static String getCurrentDateTimeDefault() {
+		String expectedDate = "";
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+		try {
+			Date date = new Date();
+			expectedDate = sdf.format(date);
+			Date date1 = sdf.parse(expectedDate);
+			sdf.setTimeZone(TimeZone.getDefault());
+			expectedDate = sdf.format(date1);
+		} catch (java.text.ParseException e) {
+			e.getClass();
+			return null;
+		}
+		return expectedDate;
+
+	}
+
+	/**
 	 * This method is to navigate back to the previous page
 	 */
 	public static void navigateBack(WebDriver driver) {
@@ -994,17 +1061,16 @@ public class TestUtil extends TestBase {
 	 *
 	 * @param locator       - web element or locator to be used
 	 * @param attributeName - attribute name for which the value to retrieved
-	 *
 	 * @return String - attribute value based on the attribute name
 	 */
 	public static String getAttributeValue(WebDriver driver, WebElement locator, String attributeName) {
 		TestUtil.waitForElementToBeVisible(driver, locator);
-		return locator.getAttribute(attributeName);
+		return locator.getDomAttribute(attributeName);
 	}
 
 	public static String getAttributeValue(WebDriver driver, By locator, String attributeName) {
 		TestUtil.waitForElementToBeVisible(driver, findElement(driver, locator));
-		return findElement(driver, locator).getAttribute(attributeName);
+		return findElement(driver, locator).getDomAttribute(attributeName);
 	}
 
 	/**
@@ -1012,38 +1078,51 @@ public class TestUtil extends TestBase {
 	 * given seconds
 	 *
 	 * @param timeout - int seconds - to be waited
-	 *
 	 * @return boolean true - if the elements are displayed else - false
 	 */
 	public static boolean waitUntilElementsDisplayed(WebDriver driver, List<WebElement> elements, int timeout) {
 		try {
 			WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeout));
 			wait.until(ExpectedConditions.visibilityOfAllElements(elements));
-			for (WebElement element : elements)
-				if (element.isDisplayed())
-					return true;
-				else
+			for (WebElement element : elements) {
+				if (!element.isDisplayed()) {
 					return false;
+				}
+			}
+			return true;
 		} catch (NoSuchElementException e) {
 			return false;
 		} catch (TimeoutException e) {
 			return false;
 		}
-		return false;
 	}
 
+	/**
+	 * This method is to switch to the parent tab and close all child tabs
+	 * 
+	 * @param parentTab - parent tab
+	 */
 	public static void SwitchtoParentTab(String parentTab) {
 		Set<String> windowHandles = getDriver().getWindowHandles();
 		for (String windows : windowHandles) {
 			if (!windows.equals(parentTab)) {
 				getDriver().switchTo().window(windows);
-				getDriver().close();
+				try {
+					getDriver().close();
+				} catch (Exception NosuchWindowException) {
+				}
 			}
 		}
+		System.out.println("Parent Tab: " + parentTab);
 		getDriver().switchTo().window(parentTab);
 		waitForSec(2);
 	}
 
+	/**
+	 * This method is to switch to the child tab
+	 * 
+	 * @param parentTab - parent tab
+	 */
 	public static void SwitchtoChildTab(String parentTab) {
 		Set<String> windowHandles = getDriver().getWindowHandles();
 		for (String windows : windowHandles) {
@@ -1053,9 +1132,53 @@ public class TestUtil extends TestBase {
 		}
 	}
 
-	public static void verifyURL(String expcted) {
+	/**
+	 * This method is to switch to the child tab based on the title when there are
+	 * more than one child tabs
+	 * 
+	 * @param parentTab - parent tab
+	 * @param title     - title of the child tab
+	 */
+	public static void SwitchtoChildTab(String parentTab, String title) {
+		Set<String> windowHandles = getDriver().getWindowHandles();
+		for (String windows : windowHandles) {
+			if (!windows.equals(parentTab)) {
+				getDriver().switchTo().window(windows);
+				if (getDriver().getTitle().equalsIgnoreCase(title)) {
+					break;
+				}
+			}
+		}
+	}
+
+	// To Handle Multiple Windows or Switch Between Multiple Windows.
+	public static void switchWindow(WebDriver driver, String firstWindow, String secondWindow) {
+		Set<String> windowHandles = driver.getWindowHandles();
+		for (String windows : windowHandles) {
+			if (!windows.equals(firstWindow) && !windows.equals(secondWindow)) {
+				driver.switchTo().window(windows);
+			}
+		}
+	}
+
+	public static void switchToNextTab(WebDriver driver) {
+		String firstWindow = driver.getWindowHandle();
+		Set<String> windowHandles = driver.getWindowHandles();
+		for (String windows : windowHandles) {
+			if (!windows.equals(firstWindow)) {
+				driver.switchTo().window(windows);
+			}
+		}
+	}
+
+	/**
+	 * This method is to verify the url contains the expected value
+	 * 
+	 * @param expctedUrl - expected url
+	 */
+	public static void verifyURL(String expctedUrl) {
 		String currentUrl = getDriver().getCurrentUrl();
-		Assert.assertTrue(currentUrl.contains(expcted));
+		Assert.assertTrue(currentUrl.contains(expctedUrl), "Url mismatch");
 	}
 
 	/**
@@ -1063,7 +1186,7 @@ public class TestUtil extends TestBase {
 	 */
 	public static void openNewTab() {
 		JavascriptExecutor js = (JavascriptExecutor) getDriver();
-		js.executeScript("window.open('');");
+		js.executeScript("window.open('')");
 	}
 
 	/**
@@ -1081,52 +1204,37 @@ public class TestUtil extends TestBase {
 
 	/**
 	 * This method is to verify the web element is enabled or not
-	 * 
+	 *
 	 * @param element - element to be verified
-	 * 
 	 * @return boolean - true if the element is enabled else false
 	 */
 	public static boolean isEnabled(WebElement element) {
-		boolean isEnabled = false;
 		try {
-			if (element.isEnabled())
-				isEnabled = true;
+			return element.isEnabled();
 		} catch (NoSuchElementException e) {
-			return isEnabled;
+			return false;
 		}
-		return isEnabled;
 	}
 
 	public static boolean isEnabled(WebDriver driver, By element) {
-		boolean isEnabled = false;
 		try {
-			if (driver.findElement(element).isEnabled())
-				isEnabled = true;
+			return driver.findElement(element).isEnabled();
 		} catch (NoSuchElementException e) {
-			return isEnabled;
+			return false;
 		}
-		return isEnabled;
 	}
 
 	public static boolean isSelected(WebElement element) {
-		boolean isSelected = false;
-		if (element.isSelected())
-			isSelected = true;
-
-		return isSelected;
+		return element.isSelected();
 	}
 
 	public static boolean isSelected(WebDriver driver, By element) {
-		boolean isSelected = false;
-		if (driver.findElement(element).isSelected())
-			isSelected = true;
-
-		return isSelected;
+		return driver.findElement(element).isSelected();
 	}
 
 	/**
 	 * This method is used to clear and send values to an input field
-	 * 
+	 *
 	 * @param element - field for which the value to be passed
 	 * @param value   - value to be used
 	 */
@@ -1150,7 +1258,7 @@ public class TestUtil extends TestBase {
 
 	/**
 	 * This method is used to find element in the page
-	 * 
+	 *
 	 * @param element - field for which the value to be passed
 	 * @return element - returns webElement
 	 */
@@ -1161,7 +1269,7 @@ public class TestUtil extends TestBase {
 
 	/**
 	 * This method is used to find elements in the page
-	 * 
+	 *
 	 * @param element - field for which the value to be passed
 	 * @return elements - returns webElement
 	 */
@@ -1172,14 +1280,163 @@ public class TestUtil extends TestBase {
 
 	/**
 	 * This method is used to get tagName of element in the page
-	 * 
 	 * @param element - field for which the value to be passed
 	 * @return String - tagName
-	 * @return element - returns webElement
 	 */
 	public static String getTagName(WebDriver driver, By element) {
 		waitForElementToBeVisible(driver, element);
 		return (driver.findElement(element).getTagName());
 	}
 
+	public static void waitForElementToBeVisible(WebDriver driver, int timeoutInSec, By locator) {
+		new WebDriverWait(driver, Duration.ofSeconds(timeoutInSec))
+				.until(ExpectedConditions.visibilityOf(driver.findElement(locator)));
+	}
+
+	public static String dateAndTime() {
+		SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+		Date date = new Date();
+		return formatter.format(date);
+	}
+
+	public static String generateRandomEmail(int length) {
+		String alphabets = "abcdefghijklmnopqrstuvwxyz";
+		String allowedChars = alphabets + "1234567890" + "_-.";
+		int lenOfAllowedChars = allowedChars.length();
+		Random rand = new Random();
+		StringBuilder sb = new StringBuilder(length);
+		sb.append(alphabets.charAt(rand.nextInt(alphabets.length())));
+		int index = 0;
+		for (int i = 0; i < length - 1; i++) {
+			index = rand.nextInt(lenOfAllowedChars);
+			sb.append(allowedChars.charAt(index));
+		}
+		return sb.toString() + "@testremitra.com";
+	}
+
+	public static String generateRandomTestNames(int length) {
+		String AlphaNumericString = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789" + "abcdefghijklmnopqrstuvxyz";
+		StringBuilder sb = new StringBuilder(length);
+		for (int i = 0; i < length; i++) {
+			int index = (int) (AlphaNumericString.length() * Math.random());
+			sb.append(AlphaNumericString.charAt(index));
+		}
+		return "Test User " + sb.toString();
+	}
+
+	public static void handleElements(List<WebElement> elements, int index) {
+		if (elements.size() == 1) {
+			WebElement singleElement = elements.get(0);
+			singleElement.click();
+		} else if (elements.size() > 1) {
+			WebElement element = elements.get(index);
+			element.click();
+		}
+	}
+
+	public static String returnTheMessageToBeGiven(String existingMessage, String messageForCurrentScenario) {
+		if (existingMessage.isEmpty())
+			return messageForCurrentScenario;
+		else
+			return (existingMessage + "." + messageForCurrentScenario);
+	}
+
+	/**
+	 * Mimics basic actions of clicking and entering value into a field. This
+	 * verifies if a field can be successfully interacted with. This method can also
+	 * be used to enter value into a field by clearing the existing value. This is
+	 * useful when editing.
+	 *
+	 * @param driver
+	 * @param element
+	 * @param valueToEnter
+	 * @return
+	 */
+	public static boolean verifyInputFieldByEnteringValue(WebDriver driver, By element, String valueToEnter) {
+		if (!isDisplayed(getDriver(), element))
+			return false;
+		try {
+			clickClearAndEnter(driver, element, valueToEnter);
+			TestUtil.clearValue(getDriver(), element);
+		} catch (Exception e) {
+			return false;
+		}
+		return true;
+	}
+
+	public static String extractUrlFromOnclick(String onclickAttribute) {
+		String regex = "copySelfRegisterLink\\('(.*?)'\\)";
+		Pattern pattern = Pattern.compile(regex);
+		Matcher matcher = pattern.matcher(onclickAttribute);
+		if (matcher.find()) {
+			return matcher.group(1);
+		}
+		return null;
+	}
+
+	public static void clickClearAndEnter(WebDriver driver, By element, String valueToEnter) {
+		clickOn(getDriver(), element);
+		clearValue(getDriver(), element);
+		sendKeys(driver, element, valueToEnter);
+	}
+
+	/**
+	 * Mimics basic actions of clicking and selecting value from dropdown list. This
+	 * verifies if a field can be successfully interacted with. This method can also
+	 * be used to enter value into a field by clearing the existing value. This is
+	 * useful when editing.
+	 *
+	 * @param driver
+	 * @param element
+	 * @return
+	 */
+	public static boolean verifyDropDownFieldBySelectingValue(WebDriver driver, By element, String valueToSelect) {
+		if (!isDisplayed(getDriver(), element))
+			return false;
+		clickOn(getDriver(), element);
+		selectValueFromDropDownByText(driver, element, valueToSelect);
+		return true;
+	}
+
+	public static boolean verifyFieldsMultiple(WebDriver driver, String elementType, Map<By, String> elementValuePair) {
+		if (elementType.equalsIgnoreCase("dropdown")) {
+			for (Map.Entry<By, String> entry : elementValuePair.entrySet()) {
+				if (!verifyDropDownFieldBySelectingValue(driver, entry.getKey(), entry.getValue()))
+					return false;
+			}
+		} else {
+			for (Map.Entry<By, String> entry : elementValuePair.entrySet()) {
+				if (!verifyInputFieldByEnteringValue(driver, entry.getKey(), entry.getValue()))
+					return false;
+			}
+		}
+		return true;
+	}
+
+	public static boolean noChangeVerification(String[] before, String[] after) {
+		if (before.length == after.length) {
+			for (int i = 0; i < before.length; i++) {
+				if (!before[i].equals(after[i]))
+					return false;
+			}
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public static String getARandomValueFromDropDown(WebDriver driver, By element) {
+		List<WebElement> options = getAllOptionsFromDropdown(driver, element);
+		int index = Integer.parseInt(getRandomNumberBetween(0, options.size() - 1));
+		return getTextValue(driver, options.get(index));
+	}
+
+	public static String copyTextToClipboardFromFieldAndGet(WebDriver driver, By field)
+			throws IOException, UnsupportedFlavorException {
+		clickOn(getDriver(), field);
+		Actions action = new Actions(driver);
+		action.keyDown(Keys.CONTROL).sendKeys("a").sendKeys("c").keyUp(Keys.CONTROL).build().perform();
+		Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+		return (String) clipboard.getData(DataFlavor.stringFlavor);
+	}
 }
