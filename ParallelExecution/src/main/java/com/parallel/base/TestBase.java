@@ -4,13 +4,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.UUID;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -25,193 +24,211 @@ import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.LocalFileDetector;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
+import com.google.common.collect.ImmutableList;
 import com.parallel.listeners.CustomAssertion;
 import com.parallel.utils.FrameworkConstant;
-import com.parallel.utils.TestUtil;
 
 public class TestBase {
 
 	public static Properties prop = new Properties();
-    public static File folder;
-    static ThreadLocal<RemoteWebDriver> driver = new ThreadLocal<RemoteWebDriver>();
-    protected CustomAssertion assertTestStep = new CustomAssertion();
+	public static File folder;
+	static ThreadLocal<RemoteWebDriver> driver = new ThreadLocal<RemoteWebDriver>();
+	protected CustomAssertion assertTestStep = new CustomAssertion();
 
-    public TestBase() {
+	public TestBase() {
 
-        try {
-            prop = new Properties();
-            FileInputStream ip = new FileInputStream(FrameworkConstant.PROPERTYFILE_PATH);
-            prop.load(ip);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+		try {
+			prop = new Properties();
+			FileInputStream ip = new FileInputStream(FrameworkConstant.PROPERTYFILE_PATH);
+			prop.load(ip);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
-    public static RemoteWebDriver getDriver() {
-        return driver.get();
-    }
+	public static RemoteWebDriver getDriver() {
+		return driver.get();
+	}
 
-    public void setDriver(RemoteWebDriver driverref) {
-        driver.set(driverref);
-    }
+	public void setDriver(RemoteWebDriver driverref) {
+		driver.set(driverref);
+	}
 
-    public void closeBrowser() {
-        driver.get().quit();
-        // driver.remove();
-    }
+	public void closeBrowser() {
+		driver.get().quit();
+	}
 
-    public void initialization(String browserType, String app) {
- //       folder = new File(UUID.randomUUID().toString());
+	public void initialization(String browserType, String app) {
+// 		  folder = new File(UUID.randomUUID().toString());
 //        folder.mkdir();
-//        String runLocation = System.getProperty("runenv").toString().equals("hub1")
-//                ? prop.getProperty("HUB_URL1").toString()
-//                : System.getProperty("runenv").toString().equals("hub2") ? prop.getProperty("HUB_URL2").toString()
-//                        : System.getProperty("runenv").toString().equals("hub3")
-//                                ? prop.getProperty("HUB_URL3").toString()
-//                                : System.getProperty("runenv").toString().equals("hub4")
-//                                        ? prop.getProperty("HUB_URL4").toString()
-//                                        : "NA";
+		String runLocation = System.getProperty("runenv").toString().equals("hub1")
+				? prop.getProperty("HUB_URL1").toString()
+				: System.getProperty("runenv").toString().equals("hub2") ? prop.getProperty("HUB_URL2").toString()
+						: System.getProperty("runenv").toString().equals("hub3")
+								? prop.getProperty("HUB_URL3").toString()
+								: System.getProperty("runenv").toString().equals("hub4")
+										? prop.getProperty("HUB_URL4").toString()
+										: "NA";
 
-        switch (browserType) {
-        case "Chrome":
+		switch (browserType) {
+		case "Chrome":
 
-            System.out.println("Launching google chrome with new profile..");
-            ChromeOptions chromeOptions = new ChromeOptions();
-            chromeOptions.addArguments("--disable-save-password-bubble");
-            chromeOptions.setExperimentalOption("excludeSwitches", Collections.singletonList("enable-automation"));
-//            chromeOptions.addExtensions(new File(FrameworkConstant.CSP_EXTENTION));
-            DesiredCapabilities capability = new DesiredCapabilities();
-            capability.setCapability(ChromeOptions.CAPABILITY, chromeOptions);
-            Map<String, Object> prefs = new HashMap<String, Object>();
-            prefs.put("profile.default_content_settings.popups", 0);
-//            prefs.put("download.default_directory", folder.getAbsolutePath());
-            prefs.put("credentials_enable_service", false);
-            prefs.put("profile.password_manager_enabled", false);
-            chromeOptions.setExperimentalOption("prefs", prefs);
-            try {
-//                if (!runLocation.equals("NA")) {
- //                  setDriver(new RemoteWebDriver(new URL("http://192.168.1.22:4444"), capability));
-//                    getDriver().setFileDetector(new LocalFileDetector());
-//                } else {
-                  setDriver(new ChromeDriver(chromeOptions));
-  //              }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            break;
+			System.out.println("Launching google chrome with new profile..");
+			ChromeOptions chromeOptions = new ChromeOptions();
+			chromeOptions.addArguments("--disable-save-password-bubble");
+			chromeOptions.setExperimentalOption("excludeSwitches", Collections.singletonList("enable-automation"));
+			chromeOptions.addExtensions(new File(FrameworkConstant.CSP_EXTENTION));
+			chromeOptions.addArguments("window-size=1920,1080");
+			DesiredCapabilities capability = new DesiredCapabilities();
+			capability.setCapability(ChromeOptions.CAPABILITY, chromeOptions);
+			Map<String, Object> prefs = new HashMap<String, Object>();
+			prefs.put("profile.default_content_settings.popups", 0);
+			// prefs.put("download.default_directory", folder.getAbsolutePath());
+			prefs.put("credentials_enable_service", false);
+			prefs.put("profile.password_manager_enabled", false);
+			chromeOptions.setExperimentalOption("prefs", prefs);
+			try {
+				if (!runLocation.equals("NA")) {
+					setDriver(new RemoteWebDriver(new URI(runLocation).toURL(), capability));
+					getDriver().setFileDetector(new LocalFileDetector());
+				} else {
+					setDriver(new ChromeDriver(chromeOptions));
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			break;
 
-        case "Firefox":
+		case "Firefox":
 
-            System.out.println("Launching Firefox browser..");
-            FirefoxOptions options = new FirefoxOptions();
-            FirefoxProfile profile = new FirefoxProfile();
-            profile.setPreference("browser.download.folderList", 2);
-            profile.setPreference("browser.download,dir", folder.getAbsolutePath());
-            profile.setPreference("browser.helperApps.neverAsk.saveToDisk",
-                    "image/png, application/pdf, application/csv, application/xls, application/xlsx");
-            profile.setPreference("pdfjs.disabled", true);
-            options.setProfile(profile);
-            setDriver(new FirefoxDriver(options));
-            break;
+			System.out.println("Launching Firefox browser..");
+			FirefoxOptions options = new FirefoxOptions();
+			FirefoxProfile profile = new FirefoxProfile();
+			profile.setPreference("browser.download.folderList", 2);
+			profile.setPreference("browser.download,dir", folder.getAbsolutePath());
+			profile.setPreference("browser.helperApps.neverAsk.saveToDisk",
+					"image/png, application/pdf, application/csv, application/xls, application/xlsx");
+			profile.setPreference("pdfjs.disabled", true);
+			options.setProfile(profile);
+			setDriver(new FirefoxDriver(options));
+			break;
 
-        case "headless":
+		case "headless":
 
-            System.out.println("Launching google chrome headless with new profile..");
-            ChromeOptions options1 = new ChromeOptions();
-            options1.addArguments("window-size=1400,800");
-            options1.addArguments("headless");
-            setDriver(new ChromeDriver(options1));
-            break;
+			System.out.println("Launching google chrome headless with new profile..");
 
-        case "Edge":
+			ChromeOptions options1 = new ChromeOptions();
+			options1.addArguments("headless");
+			options1.addArguments("--disable-save-password-bubble");
+			options1.setExperimentalOption("excludeSwitches", Collections.singletonList("enable-automation"));
+			options1.addExtensions(new File(FrameworkConstant.CSP_EXTENTION));
+			options1.addArguments("window-size=1400,1050");
+			DesiredCapabilities capabilityHls = new DesiredCapabilities();
+			capabilityHls.setCapability(ChromeOptions.CAPABILITY, options1);
+			Map<String, Object> prefsHls = new HashMap<String, Object>();
+			prefsHls.put("profile.default_content_settings.popups", 0);
+			// prefs.put("download.default_directory", folder.getAbsolutePath());
+			prefsHls.put("credentials_enable_service", false);
+			prefsHls.put("profile.password_manager_enabled", false);
+			options1.setExperimentalOption("prefs", prefsHls);
+			try {
+				if (!runLocation.equals("NA")) {
+					setDriver(new RemoteWebDriver(new URI(runLocation).toURL(), capabilityHls));
+					getDriver().setFileDetector(new LocalFileDetector());
+				} else {
+					setDriver(new ChromeDriver(options1));
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			break;
 
-            System.out.println("Launching Microsoft Edge with new profile..");
-            HashMap<String, Object> edgePrefs = new HashMap<String, Object>();
-            edgePrefs.put("download.default_directory", folder.getAbsolutePath());
-            EdgeOptions opt = new EdgeOptions();
-            opt.setExperimentalOption("prefs", edgePrefs);
-            setDriver(new EdgeDriver());
-            break;
+		case "Edge":
 
-        default:
-            System.out.println("browser : " + browserType + " is invalid, Launching Chrome as browser of choice..");
-            System.out.println("Launching google chrome with new profile..");
-            chromeOptions = new ChromeOptions();
-            chromeOptions.setExperimentalOption("excludeSwitches", Collections.singletonList("enable-automation"));
-            chromeOptions.addExtensions(new File(FrameworkConstant.CSP_EXTENTION));
-            DesiredCapabilities capability1 = new DesiredCapabilities();
-            capability1.setCapability(ChromeOptions.CAPABILITY, chromeOptions);
-            Map<String, Object> prefs1 = new HashMap<String, Object>();
-            prefs1.put("profile.default_content_settings.popups", 0);
-//            prefs1.put("download.default_directory", folder.getAbsolutePath());
-            prefs1.put("credentials_enable_service", false);
-            prefs1.put("profile.password_manager_enabled", false);
-            chromeOptions.setExperimentalOption("prefs", prefs1);
-           try {
-//                if (!runLocation.equals("NA")) {
-//                    setDriver(new RemoteWebDriver(new URL(runLocation), capability1));
-//                } else {
-                    setDriver(new ChromeDriver(chromeOptions));
- //               }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        getDriver().manage().window().maximize();
-        getDriver().manage().deleteAllCookies();
-        getDriver().manage().timeouts().pageLoadTimeout(Duration.ofSeconds(FrameworkConstant.PAGE_LOAD_TIMEOUT));
-        getDriver().manage().timeouts().implicitlyWait(Duration.ofSeconds(FrameworkConstant.IMPLICIT_WAIT));
-        if (app.contains("TEST")) {
-            getDriver().navigate().to(prop.getProperty("URL"));
-        } else {
-            getDriver().navigate().to(prop.getProperty("URL"));
-        }
-    }
+			System.out.println("Launching Microsoft Edge with new profile..");
+			HashMap<String, Object> edgePrefs = new HashMap<String, Object>();
+			// edgePrefs.put("download.default_directory", folder.getAbsolutePath());
+			EdgeOptions opt = new EdgeOptions();
+			opt.setExperimentalOption("excludeSwitches", ImmutableList.of("disable-popup-blocking"));
+			opt.setExperimentalOption("prefs", edgePrefs);
+			opt.addArguments("--window-size=1920,1080");
+			try {
+				if (!runLocation.equals("NA")) {
+					setDriver(new RemoteWebDriver(new URI(runLocation).toURL(), opt));
+					getDriver().setFileDetector(new LocalFileDetector());
+				} else {
+					setDriver(new EdgeDriver(opt));
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 
-    public void pipeLineinitialization(String browserName, String app) {
-        if (browserName.equalsIgnoreCase("Chrome")) {
-            System.out.println("Webdriver started");
-            ChromeOptions options = new ChromeOptions();
-            options.addArguments("--headless");
-            options.addArguments("window-size=1024,768");
-            options.addArguments("--no-sandbox");
-            setDriver(new ChromeDriver(options));
-        }
-        getDriver().manage().window().maximize();
-        getDriver().manage().deleteAllCookies();
-        if (app.contains("TEST")) {
-            getDriver().navigate().to(prop.getProperty("URL"));
-        } else {
-            getDriver().navigate().to(prop.getProperty("URL"));
-        }
-    }
+			break;
 
-    public void tearDown() {
-        closeBrowser();
-        // Delete the download folder
+		default:
+			System.out.println("browser : " + browserType + " is invalid, Launching Chrome as browser of choice..");
+			System.out.println("Launching google chrome with new profile..");
+			chromeOptions = new ChromeOptions();
+			chromeOptions.setExperimentalOption("excludeSwitches", Collections.singletonList("enable-automation"));
+			chromeOptions.addExtensions(new File(FrameworkConstant.CSP_EXTENTION));
+			DesiredCapabilities capability1 = new DesiredCapabilities();
+			capability1.setCapability(ChromeOptions.CAPABILITY, chromeOptions);
+			Map<String, Object> prefs1 = new HashMap<String, Object>();
+			prefs1.put("profile.default_content_settings.popups", 0);
+			prefs1.put("download.default_directory", folder.getAbsolutePath());
+			prefs1.put("credentials_enable_service", false);
+			prefs1.put("profile.password_manager_enabled", false);
+			chromeOptions.setExperimentalOption("prefs", prefs1);
+			try {
+				if (!runLocation.equals("NA")) {
+					setDriver(new RemoteWebDriver(new URI(runLocation).toURL(), capability1));
+				} else {
+					setDriver(new ChromeDriver(chromeOptions));
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		getDriver().manage().window().maximize();
+		getDriver().manage().deleteAllCookies();
+		getDriver().manage().timeouts().pageLoadTimeout(Duration.ofSeconds(FrameworkConstant.PAGE_LOAD_TIMEOUT));
+		getDriver().manage().timeouts().implicitlyWait(Duration.ofSeconds(FrameworkConstant.IMPLICIT_WAIT));
+		switch (app) {
+		case "TEST":
+			getDriver().navigate().to(prop.getProperty("URL"));
+			break;
+		case "Test":
+			getDriver().navigate().to(prop.getProperty("URL"));
+			break;
+		}
+	}
+
+	public void tearDown() {
+		closeBrowser();
+		// Delete the download folder
 //      try {
 //          TestUtil.deleteDownloadfolder();
 //      } catch (IOException e) {
 //          e.printStackTrace();
 //      }
-    }
+	}
 
-    public static void setPropertyValue(String Key, String value, String config_path)
-            throws ConfigurationException, IOException {
-        PropertiesConfiguration config = new PropertiesConfiguration(config_path);
-        config.setProperty(Key, value);
-        config.save();
-        FileInputStream file = new FileInputStream(config_path);
-        prop.load(file);
-    }
+	public static void setPropertyValue(String Key, String value, String config_path)
+			throws ConfigurationException, IOException {
+		PropertiesConfiguration config = new PropertiesConfiguration(config_path);
+		config.setProperty(Key, value);
+		config.save();
+		FileInputStream file = new FileInputStream(config_path);
+		prop.load(file);
+	}
 
-    public static Object fetchPropertyValue(String Key, String config_path) throws IOException {
-        FileInputStream file = new FileInputStream(config_path);
-        Properties property = new Properties();
-        property.load(file);
-        return property.getProperty(Key);
-    }
+	public static Object fetchPropertyValue(String Key, String config_path) throws IOException {
+		FileInputStream file = new FileInputStream(config_path);
+		Properties property = new Properties();
+		property.load(file);
+		return property.getProperty(Key);
+	}
 
 }
